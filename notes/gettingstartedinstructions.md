@@ -103,9 +103,78 @@ jaffle_shop: # this needs to match the profile: in your dbt_project.yml file
       timeout_seconds: 300
       location: US
       priority: interactive
-
+t
 ```
     d. navigate to `jaffle_shop` directory that was created when you executed `dbt init` and execute `dbt debug`. If you have successfully performed all the above steps, it should say "Connection test: OK connection ok"
 
 5. Perform your first dbt run
     a. Execute `dbt run` from `jaffle_shop`
+
+
+### Build your first models
+
+1. create a file `jaffle_shop/models/customers.sql`
+2. paste the SQL query from the start of the document in that file
+3. execute `dbt run`
+4. note that 
+    - `target/compiled` is a directory of compiled select statements
+    - `target/run/` directory is compiled `create` statements
+    - the `logs/dbt.log` file has verbose logging
+
+### Change the way your model is materialized
+
+1. Use the + sign in your dbt_project.yml
+
+```
+models:
+  jaffle_shop:
+    +materialized: table
+    example:
+      +materialized: view
+```
+- the above makes it so customers is a table
+
+2. Add the following to `models/customers.sql` file
+    - This makes it so the materialization of customers is as a view, rather than a table
+```sql
+{{
+  config(
+    materialized='view'
+  )
+}}
+
+```
+- execute dbt run
+
+- run `dbt run --full-refresh` to make sure the changes updated on BigQuery
+- note you now have `customers` as a view on BigQuery
+
+3. delete the example models; i.e., delete all of `models/example`, including directory
+
+## Build Models on top of other Models
+
+create a new file `models/stg_customers.sql` with the following content:
+
+```sql
+select
+    id as customer_id,
+    first_name,
+    last_name
+
+from `dbt-tutorial`.jaffle_shop.customers
+
+```
+
+create another file as `models/stg_orders.sql` with the following content:
+
+```sql
+select
+    id as order_id,
+    user_id as customer_id,
+    order_date,
+    status
+
+from `dbt-tutorial`.jaffle_shop.orders
+```
+
+4. Edit models/customsers.sql
